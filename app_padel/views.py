@@ -48,7 +48,7 @@ def inicio(request):
             return login_app
     vars['user'] = user
     clubs = Club.objects.all()
-    club = Club.objects.filter(admin_id_id=user.id)
+    club = Club.objects.filter(admin_id = user.id)
     if club.exists():
         vars['club'] = club[0]
     else:
