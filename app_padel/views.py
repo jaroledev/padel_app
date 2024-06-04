@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import RegistroForm, ReservaForm,DetallesClubForm
 from .models import Club, Pista, Reserva , DetallesClub , Dimensiones
+from django.db.models import Q
 from django.http import JsonResponse,HttpResponse
 from .funciones import convert_base64_to_image,convert_image_to_base64
 from django.utils import timezone
@@ -109,7 +110,6 @@ def crear_reserva_antiguo(request):
     return render(request, 'app_padel/nuevaReserva.html', {'vars': vars})
 
 def crear_reserva(request):
-    #horas = [f"{hour:02d}:00" for hour in range(8, 23)] + [f"{hour:02d}:30" for hour in range(8, 22)]
     horas_dim = Dimensiones.objects.all()
     horas_list = horas_dim.values_list('horas_disponibles', flat=True).order_by('horas_disponibles')
     horas = []
@@ -131,15 +131,21 @@ def crear_reserva(request):
 
         fecha_hora = f"{fecha} {hora}"
         fecha_hora_dt = timezone.datetime.strptime(fecha_hora, '%Y-%m-%d %H:%M')
+        fecha_hora_dt_aware_ini = timezone.make_aware(fecha_hora_dt, timezone.utc)
+        fecha_hora_dt_aware_inicio = fecha_hora_dt_aware_ini - timedelta(minutes=90)
+        fecha_hora_dt_aware_fin = fecha_hora_dt_aware_ini + timedelta(minutes=90)
 
         # Filtrar reservas activas para la fecha y hora seleccionadas
-        reservas = Reserva.objects.filter(hora_inicio=fecha_hora_dt, activo=True)
-
+        reservas = Reserva.objects.filter(hora_inicio__gt=fecha_hora_dt_aware_inicio,hora_inicio__lt=fecha_hora_dt_aware_fin, activo=True)
+        hora_fin_pistas = []
         # Obtener pistas no reservadas
         pistas_reservadas = reservas.values_list('pista_id', flat=True)
         pistas_disponibles = Pista.objects.exclude(id__in=pistas_reservadas)
+        pistas_ocupadas = []
+        for pista in pistas_reservadas:
+            pistas_ocupadas.append(pista)
 
-        if ciudad:
+        if ciudad != '-1':
             clubs = Club.objects.filter(direccion__icontains=ciudad, pistas__in=pistas_disponibles).distinct()
         else:
             clubs = Club.objects.filter(pistas__in=pistas_disponibles).distinct()
@@ -151,7 +157,8 @@ def crear_reserva(request):
             'hora': hora,
             'ciudad': ciudad,
             'ciudades': ciudades, 
-            'hoy' : hoy
+            'hoy' : hoy,
+            'pistas_ocupadas':pistas_ocupadas
         })
 
     return render(request, 'app_padel/nuevaReserva.html', {'horas': horas ,'ciudades': ciudades, 'hoy' : hoy})

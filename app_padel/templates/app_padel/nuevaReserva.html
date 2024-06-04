@@ -2,6 +2,7 @@
 {% block content %}
 <title>App Padel - Mis Reservas</title>
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
  <!-- Contenido principal -->
  <div class="content" id="content">
     <div class="container mt-5">
@@ -12,11 +13,11 @@
                 <div class="row mb-6 pt-2" style="align-items: end;">
                     <div class="col-sm-3">
                         <label for="fecha">Fecha:</label>
-                        <input type="date" class="form-control" id="fecha" name="fecha" min="{{ hoy }}" required>
+                        <input type="date" class="form-control" id="fecha" name="fecha" min="{{ hoy }}" value="{{ fecha }}" required>
                     </div>
                     <div class="col-sm-3">    
                         <label for="hora">Hora:</label>
-                        <select class="form-control" id="hora" name="hora" required>
+                        <select class="form-control" id="hora" name="hora" value="{{ hora }}" required>
                         {% for hora in horas %}
                             <option value="{{ hora }}">{{ hora }}</option>
                         {% endfor %}
@@ -25,6 +26,7 @@
                     <div class="col-sm-3">
                         <label for="ciudad">Ciudad:</label>
                         <select class="form-control" id="ciudad" name="ciudad">
+                            <option value="-1"> </option>
                             {% for ciudad in ciudades %}
                                 <option value="{{ ciudad.direccion }}">{{ ciudad.direccion }}</option>
                             {% endfor %}
@@ -45,6 +47,7 @@
                         <div class="card-body">
                             <div class="row">
                                 {% for pista in club.pistas.all %}
+                                    {% if pista.id not in pistas_ocupadas %}
                                     <div class="col-md-4 mb-3">
                                         <div class="card">
                                             <img src="data:image/png;base64,{{ club.detalles.imagen_principal }}" class="card-img-top" alt="Imagen de la pista">
@@ -55,6 +58,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         </div>
@@ -71,4 +75,18 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
  </div> 
+ <script>
+    $(document).ready(function() {
+        // Obtener el valor desde una variable de Django
+        var valorSeleccionado = "{{ hora }}";
+        var valorCiudad = "{{ ciudad }}";
+        
+        // Establecer el valor seleccionado en el selector
+        $('#hora').val(valorSeleccionado);
+        if( valorCiudad != '-1'){
+            $('#ciudad').val(valorCiudad);
+        }
+        
+    });
+</script>
 {% endblock %}
