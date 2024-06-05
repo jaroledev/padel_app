@@ -32,5 +32,7 @@ urlpatterns = [
     path('usuario/', views.usuario, name='usuario'),
     path('gestionar_detalles_club/<int:club_id>/', views.gestionar_detalles_club, name='gestionar_detalles_club'),
     path('modificar_club/<int:club_id>/', views.modificar_club, name='modificar_club'),
-    path('administrar_club/', views.administrar_club, name='administrar_club')
+    path('administrar_club/', views.administrar_club, name='administrar_club'),
+    path('crear_club/', views.crear_club, name='crearClub'),
+    path('buscar_usuarios/', views.buscar_usuarios, name='buscar_usuarios'),
 ]

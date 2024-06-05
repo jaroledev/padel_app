@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import ModelForm
 from .models import Reserva,DetallesClub,Club,Pista
+
 class RegistroForm(UserCreationForm):
     email = forms.EmailField(max_length=100)
 
@@ -48,3 +49,15 @@ class PistaForm(forms.ModelForm):
             'numero': forms.NumberInput(attrs={'class': 'form-control'}),
             'descripcion': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+class ClubForm2(forms.ModelForm):
+    admin_id = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        required=True,
+        label="Usuario Administrador"
+    )
+    
+    class Meta:
+        model = Club
+        fields = ['nombre', 'direccion', 'admin_id']  # Incluye el campo admin_id

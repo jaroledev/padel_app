@@ -2,13 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import RegistroForm, ReservaForm,DetallesClubForm,ClubForm, PistaForm
-from .models import Club, Pista, Reserva , DetallesClub , Dimensiones
+from .forms import RegistroForm, ReservaForm,DetallesClubForm,ClubForm, PistaForm, ClubForm2
+from .models import Club,Pista, Reserva , DetallesClub , Dimensiones
 from django.db.models import Q
 from django.http import JsonResponse,HttpResponse
 from .funciones import convert_base64_to_image,convert_image_to_base64
 from django.utils import timezone
 from datetime import datetime, timedelta
+from django.contrib.auth.models import User
 
 def home(request):
     return render(request, 'app_padel/home.html')
@@ -338,3 +339,21 @@ def modificar_club(request, club_id):
         'pistas': pistas,
     }
     return render(request, 'app_padel/modificarClub.html', context)
+
+@login_required
+def crear_club(request):
+    if request.method == 'POST':
+        form = ClubForm2(request.POST)
+        if form.is_valid():
+            club = form.save(commit=False)
+            club.save()
+            return redirect('clubsDisponibles')  # Redirige a la vista que lista los clubes
+    else:
+        form = ClubForm2()
+    return render(request, 'app_padel/crearClub.html', {'form': form})
+
+def buscar_usuarios(request):
+    query = request.GET.get('q', '')
+    usuarios = User.objects.filter(username__icontains=query).exclude(id__in=Club.objects.values_list('admin_id', flat=True))
+    results = [{'id': user.id, 'username': user.username} for user in usuarios]
+    return JsonResponse(results, safe=False)
