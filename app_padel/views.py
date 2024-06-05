@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import RegistroForm, ReservaForm,DetallesClubForm
+from .forms import RegistroForm, ReservaForm,DetallesClubForm,ClubForm, PistaForm
 from .models import Club, Pista, Reserva , DetallesClub , Dimensiones
 from django.db.models import Q
 from django.http import JsonResponse,HttpResponse
@@ -49,7 +49,7 @@ def inicio(request):
             return login_app
     vars['user'] = user
     clubs = Club.objects.all()
-    club = Club.objects.filter(admin_id = user.id)
+    club = Club.objects.filter(admin_id= user.id)
     if club.exists():
         vars['club'] = club[0]
     else:
@@ -232,20 +232,31 @@ def delete_reserva(request, reserva_id):
     reserva.save()
     return misReservas(request)
 
-def create_detalles_club(request):
+@login_required
+def gestionar_detalles_club(request, club_id):
+    club = get_object_or_404(Club, id=club_id)
+    detalles_club, created = DetallesClub.objects.get_or_create(club=club)
+
     if request.method == 'POST':
-        form = DetallesClubForm(request.POST, request.FILES)
+        form = DetallesClubForm(request.POST, request.FILES, instance=detalles_club)
         if form.is_valid():
-            detalles_club = form.save(commit=False)
-            if 'imagen_principal' in request.FILES:
-                detalles_club.imagen_principal = convert_image_to_base64(request.FILES['imagen_principal'])
-            if 'imagen_secundaria' in request.FILES:
-                detalles_club.imagen_secundaria = convert_image_to_base64(request.FILES['imagen_secundaria'])
-            detalles_club.save()
-            return redirect('inicio')
+            if 'imagen_principal_file' in request.FILES:
+                imagen_principal = request.FILES['imagen_principal_file']
+                detalles_club.imagen_principal = convert_image_to_base64(imagen_principal)
+            if 'imagen_secundaria_file' in request.FILES:
+                imagen_secundaria = request.FILES['imagen_secundaria_file']
+                detalles_club.imagen_secundaria = convert_image_to_base64(imagen_secundaria)
+            form.save()
+            return redirect('administrar_club')
     else:
-        form = DetallesClubForm()
-    return render(request, 'app_padel/detalles_club_form.html', {'form': form})
+        form = DetallesClubForm(instance=detalles_club)
+
+    context = {
+        'form': form,
+        'club': club,
+        'detalles_club': detalles_club,
+    }
+    return render(request, 'app_padel/detallesClub.html', context)
 
 def clubs_disponibles(request):
     clubs = Club.objects.all()
@@ -262,3 +273,68 @@ def clubs_disponibles(request):
         'clubs': clubs
     }
     return render(request, 'app_padel/clubsDisponibles.html', context)
+
+@login_required
+def administrar_club(request):
+    usuario = request.user
+    try:
+        club = Club.objects.get(admin_id=usuario.id)
+    except Club.DoesNotExist:
+        # Manejar el caso donde el usuario no es administrador de ningún club
+        return render(request, 'administrarClub.html', {'error': 'No administras ningún club.'})
+
+    fecha_seleccionada = request.GET.get('fecha')
+    reservas_agrupadas = {}
+
+    if fecha_seleccionada:
+        fecha = timezone.datetime.strptime(fecha_seleccionada, '%Y-%m-%d').date()
+        reservas = Reserva.objects.filter(pista__club=club, hora_inicio__date=fecha, activo=True).order_by('pista')
+
+        # Agrupar reservas por pista
+        for reserva in reservas:
+            pista = reserva.pista
+            if pista not in reservas_agrupadas:
+                reservas_agrupadas[pista] = []
+            reservas_agrupadas[pista].append(reserva)
+
+    context = {
+        'fecha_seleccionada': fecha_seleccionada,
+        'reservas_agrupadas': reservas_agrupadas,
+        'club':club
+    }
+    return render(request, 'app_padel/administrarClub.html', context)
+
+@login_required
+def modificar_club(request, club_id):
+    club = get_object_or_404(Club, id=club_id)
+
+    if request.method == 'POST':
+        if 'guardar_club' in request.POST:
+            club_form = ClubForm(request.POST, instance=club)
+            if club_form.is_valid():
+                club_form.save()
+                return redirect('modificar_club', club_id=club_id)
+        elif 'agregar_pista' in request.POST:
+            pista_form = PistaForm(request.POST)
+            if pista_form.is_valid():
+                nueva_pista = pista_form.save(commit=False)
+                nueva_pista.club = club
+                nueva_pista.save()
+                return redirect('modificar_club', club_id=club_id)
+        elif 'eliminar_pista' in request.POST:
+            pista_id = request.POST.get('pista_id')
+            Pista.objects.filter(id=pista_id).delete()
+            return redirect('modificar_club', club_id=club_id)
+    else:
+        club_form = ClubForm(instance=club)
+        pista_form = PistaForm()
+
+    pistas = Pista.objects.filter(club=club)
+
+    context = {
+        'club_form': club_form,
+        'pista_form': pista_form,
+        'club': club,
+        'pistas': pistas,
+    }
+    return render(request, 'app_padel/modificarClub.html', context)

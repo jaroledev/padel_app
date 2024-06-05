@@ -19,7 +19,7 @@
             <a href="{% url 'misReservas' %}">Mis Reservas</a>
             <a href="{% url 'crear_reserva' %}">Reservar</a>
             {% if club %}
-                <a href="#">Administrar Club</a>
+                <a href="{% url 'administrar_club' %}">Administrar Club</a>
             {% endif %}
             {% if user.is_superuser %}            
                 <a href="#">Añadir Club</a>

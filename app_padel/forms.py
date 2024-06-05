@@ -2,8 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import ModelForm
-from .models import Reserva,DetallesClub
-
+from .models import Reserva,DetallesClub,Club,Pista
 class RegistroForm(UserCreationForm):
     email = forms.EmailField(max_length=100)
 
@@ -18,10 +17,34 @@ class ReservaForm(ModelForm):
 
 
 class DetallesClubForm(forms.ModelForm):
+    imagen_principal_file = forms.FileField(required=False, widget=forms.ClearableFileInput(attrs={'class': 'form-control'}))
+    imagen_secundaria_file = forms.FileField(required=False, widget=forms.ClearableFileInput(attrs={'class': 'form-control'}))
+
     class Meta:
         model = DetallesClub
         fields = ['ubicacion', 'descripcion_larga', 'numero_pistas', 'imagen_principal', 'imagen_secundaria']
         widgets = {
-            'imagen_principal': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
-            'imagen_secundaria': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+            'ubicacion': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion_larga': forms.Textarea(attrs={'class': 'form-control'}),
+            'numero_pistas': forms.NumberInput(attrs={'class': 'form-control'}),
+            'imagen_principal': forms.HiddenInput(),
+            'imagen_secundaria': forms.HiddenInput(),
+        }
+
+class ClubForm(forms.ModelForm):
+    class Meta:
+        model = Club
+        fields = ['nombre', 'direccion']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class PistaForm(forms.ModelForm):
+    class Meta:
+        model = Pista
+        fields = ['numero', 'descripcion']
+        widgets = {
+            'numero': forms.NumberInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.TextInput(attrs={'class': 'form-control'}),
         }

@@ -8,7 +8,7 @@ class Club(models.Model):
     nombre = models.CharField(max_length=100)
     direccion = models.CharField(max_length=200)
     activo = models.BooleanField(default=1)
-    admin = models.ForeignKey(User,on_delete=models.CASCADE)
+    admin_id = models.ForeignKey(User,on_delete=models.CASCADE)
     # Otros campos para la información del club
 
     def __str__(self):
